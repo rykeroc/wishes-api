@@ -1,0 +1,6 @@
+@WishesAPI_HostAddress = http://localhost:5234
+
+GET {{WishesAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

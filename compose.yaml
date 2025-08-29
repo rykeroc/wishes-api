@@ -1,0 +1,7 @@
+﻿services:
+  wishesapi:
+    image: wishesapi
+    build:
+      context: .
+      dockerfile: WishesAPI/Dockerfile
+
