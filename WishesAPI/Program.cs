@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using WishesAPI.Data;
 using WishesAPI.Services;
@@ -9,6 +10,17 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
+
+// Configure Database Context
+var connectionString = builder.Configuration.GetConnectionString("WishesContext");
+builder.Services.AddDbContextPool<WishesContext>(opt => opt.UseNpgsql(connectionString));
+
+// Configure Identity
+builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+{
+    options.SignIn.RequireConfirmedAccount = true;
+})
+    .AddEntityFrameworkStores<WishesContext>();
 
 builder.Services.AddAuthentication(o =>
     {
@@ -29,9 +41,6 @@ builder.Services.AddAuthentication(o =>
     });
 
 builder.Services.AddScoped<IJwtService, JwtService>();
-
-var connectionString = builder.Configuration.GetConnectionString("WishesContext");
-builder.Services.AddDbContextPool<WishesContext>(opt => opt.UseNpgsql(connectionString));
 
 var app = builder.Build();
 

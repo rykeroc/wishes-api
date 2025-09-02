@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Identity;
+
 namespace WishesAPI.Models;
 
 public class Wishlist
@@ -7,11 +9,11 @@ public class Wishlist
     
     public string Description { get; set; } = "";
     public string Emoji { get; set; } = "";
-    public DateTime? TargetDate { get; set; } = null;
-    public DateTime? CreatedAt { get; set; } = null;
-    public DateTime? UpdatedAt { get; set; } = null;
-    public bool IsPublic { get; set; } = false;
+    public DateTime? TargetDate { get; set; }
+    public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public bool IsPublic { get; set; }
     
-    public User User { get; set; }
+    public IdentityUser User { get; set; }
     public ICollection<Wish> Wishes { get; }
 }

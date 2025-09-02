@@ -7,12 +7,12 @@ public class Wish
 
     public string Description { get; set; } = "";
     public string ImageUrl { get; set; } = "";
-    public int? PriceAmount { get; set; } = null;
-    public string? PriceCurrency { get; set; } = null;
-    public string? ProductUrl { get; set; } = null;
-    public int Priority { get; set; } = 0;
-    public DateTime? CreatedAt { get; set; } = null;
-    public DateTime? UpdatedAt { get; set; } = null;
+    public int? PriceAmount { get; set; }
+    public string? PriceCurrency { get; set; }
+    public string? ProductUrl { get; set; }
+    public int Priority { get; set; }
+    public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
     
     public Wishlist Wishlist { get; set; }
 }
