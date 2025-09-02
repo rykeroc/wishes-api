@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using WishesAPI.Data;
@@ -17,29 +15,27 @@ builder.Services.AddDbContextPool<WishesContext>(opt => opt.UseNpgsql(connection
 
 // Configure Identity
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
-{
-    options.SignIn.RequireConfirmedAccount = true;
-})
-    .AddEntityFrameworkStores<WishesContext>();
+    {
+        options.SignIn.RequireConfirmedAccount = true;
+    })
+    .AddEntityFrameworkStores<WishesContext>()
+    .AddDefaultTokenProviders();
 
-builder.Services.AddAuthentication(o =>
-    {
-        o.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        o.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-    })
-    .AddCookie(options =>
-    {
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(10); // Short-lived for OAuth flow
-        options.SlidingExpiration = false;
-    })
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/api/auth/google/login";
+    options.AccessDeniedPath = "/api/auth/access-denied";
+});
+
+builder.Services.AddAuthentication()
     .AddGoogle(options =>
     {
         options.SaveTokens = true;
         options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
         options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
-        options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     });
 
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
 var app = builder.Build();
