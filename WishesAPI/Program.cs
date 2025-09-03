@@ -27,16 +27,17 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/api/auth/access-denied";
 });
 
+// Configure third party AUTH
 builder.Services.AddAuthentication()
     .AddGoogle(options =>
     {
         options.SaveTokens = true;
         options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
         options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
+        options.SignInScheme = IdentityConstants.ExternalScheme;
     });
 
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IJwtService, JwtService>();
 
 var app = builder.Build();
 

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 
 namespace WishesAPI.Services;
@@ -9,7 +10,8 @@ public interface IAuthService
     string? FindEmail(IEnumerable<Claim> claims);
     string? FindProviderKey(IEnumerable<Claim> claims);
     Task<IdentityUser> FindProviderUserWithEmailAsync(string email, string provider, string providerKey);
-    Task SignInUserAsync(IdentityUser user);
+    Task ExternalSignInUserAsync(string loginProvider, string providerKey, bool isPersistent, bool bypassTwoFactor);
+    Task SignOutUserAsync();
 }
 
 public class AuthService(
@@ -62,8 +64,13 @@ public class AuthService(
         return user;
     }
 
-    public async Task SignInUserAsync(IdentityUser user)
+    public Task ExternalSignInUserAsync(string loginProvider, string providerKey, bool isPersistent, bool bypassTwoFactor)
     {
-        await signInManager.SignInAsync(user, isPersistent: false);
+        return signInManager.ExternalLoginSignInAsync(loginProvider, providerKey, isPersistent, bypassTwoFactor);
+    }
+    
+    public Task SignOutUserAsync()
+    {
+        return signInManager.SignOutAsync();
     }
 }

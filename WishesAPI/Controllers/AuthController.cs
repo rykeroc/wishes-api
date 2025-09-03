@@ -10,7 +10,6 @@ namespace WishesAPI.Controllers;
 [Route("api/auth")]
 public class AuthController(
     ILogger<AuthController> logger,
-    IJwtService jwtService,
     IConfiguration configuration,
     IAuthService authService
 ) : ControllerBase
@@ -64,43 +63,25 @@ public class AuthController(
         
         // Get user with email
         const string provider = "Google";
-        IdentityUser user;
-        try
-        {
-            user = await authService.FindProviderUserWithEmailAsync(email, provider, providerKey);
-        }
-        catch (AuthenticationFailureException)
-        {
-            return Problem(detail: "Error finding user", statusCode: StatusCodes.Status500InternalServerError);
-        }
         
-        // Sign in user
-        await authService.SignInUserAsync(user);
-        
-        // Generate JWT token
-        var token = jwtService.GenerateToken(user.Id, user.Email!, user.UserName!);
-        logger.LogDebug("Generated token: {token}", token);
+        // Adds auth cookie to response for user
+        await authService.ExternalSignInUserAsync(provider, providerKey, isPersistent: true, bypassTwoFactor: true);
 
-        var loginCallbackPath = configuration["ClientApplication:LoginCallback"];
-        var fullLoginCallbackUrl = $"{loginCallbackPath}?token={token}";
+        var loginCallbackPath = configuration["ClientApplication:LoginCallback"]!;
         
         // Redirect to client application
-        return Redirect(fullLoginCallbackUrl);
+        return Redirect(loginCallbackPath);
     }
     
-    // // TODO
-    // [HttpGet]
-    // [Route("/refresh")]
-    // public ActionResult RefreshToken()
-    // {
-    //     return new OkResult();
-    // }
-    //
-    // // TODO
-    // [HttpGet]
-    // [Route("/logout")]
-    // public ActionResult Logout()
-    // {
-    //     return new OkResult();
-    // }
+    [HttpGet]
+    [Route("logout")]
+    public async Task<ActionResult> Logout()
+    {
+        await authService.SignOutUserAsync();
+        
+        var logoutCallbackPath = configuration["ClientApplication:LogoutCallback"]!;
+        
+        // Redirect to client application
+        return Redirect(logoutCallbackPath);
+    }
 }
