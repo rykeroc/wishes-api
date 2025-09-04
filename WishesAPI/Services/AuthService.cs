@@ -1,16 +1,11 @@
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 
 namespace WishesAPI.Services;
 
 public interface IAuthService
 {
-    string? FindEmail(IEnumerable<Claim> claims);
-    string? FindProviderKey(IEnumerable<Claim> claims);
-    Task<IdentityUser> FindProviderUserWithEmailAsync(string email, string provider, string providerKey);
-    Task ExternalSignInUserAsync(string loginProvider, string providerKey, bool isPersistent, bool bypassTwoFactor);
+    Task<AuthResult> LoginWithProvider();
     Task SignOutUserAsync();
 }
 
@@ -20,53 +15,68 @@ public class AuthService(
     SignInManager<IdentityUser> signInManager
 ): IAuthService
 {
-    public string? FindEmail(IEnumerable<Claim> claims)
+    public async Task<AuthResult> LoginWithProvider()
     {
-        return claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
-    }
-
-    public string? FindProviderKey(IEnumerable<Claim> claims)
-    {
-        return claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-    }
-
-    public async Task<IdentityUser> FindProviderUserWithEmailAsync(string email, string provider, string providerKey)
-    {
-        // Find user with email
-        var user = await userManager.FindByEmailAsync(email);
-        // User exists
-        if (user != null) return user;
+        // Get external login information from provider sign in
+        var externalLoginInfo = await signInManager.GetExternalLoginInfoAsync();
+        if (externalLoginInfo == null)
+        {
+            // No login information found for the current user.
+            // This means they are not signed in via the third party
+            return AuthResult.Failure("No external login information provided");
+        }
         
+        // Attempt to sign in with third party login information 
+        var loginResult = await signInManager.ExternalLoginSignInAsync(
+            externalLoginInfo.LoginProvider, 
+            externalLoginInfo.ProviderKey, 
+            isPersistent: true, 
+            bypassTwoFactor: true
+        ); 
+        if (loginResult.Succeeded) return AuthResult.Success();
+        
+        IdentityError error;
         // Create new user
-        user = new IdentityUser
+        var email = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Email);
+        var user = new IdentityUser
         {
             UserName = email,
             Email = email,
             EmailConfirmed = true
         };
-        var loginInfo = new UserLoginInfo(provider, providerKey, providerKey);
-
-        // Persist new user and provider login information
-        var result = await userManager.CreateAsync(user);
-        if (!result.Succeeded)
+        var createResult = await userManager.CreateAsync(user);
+        if (!createResult.Succeeded)
         {
-            logger.LogError("Error creating user with email {email}: {errors}", email, result.Errors);
-            throw new AuthenticationFailureException(result.Errors.ToString());
+            error = createResult.Errors.ToList()[0];
+            logger.LogError("Error creating user with email {email}: {error}", email, error);
+            return AuthResult.Failure(error.Description);
         }
         
-        result = await userManager.AddLoginAsync(user, loginInfo);
-        if (!result.Succeeded)
+        // Create external login information for the new user
+        var loginInfo = new UserLoginInfo(
+            externalLoginInfo.LoginProvider, 
+            externalLoginInfo.ProviderKey,  
+            externalLoginInfo.LoginProvider
+        );
+        createResult = await userManager.AddLoginAsync(user, loginInfo);
+        if (!createResult.Succeeded)
         {
-            logger.LogError("Error adding login info for user with ID {userId}: {errors}", user.Id, result.Errors);
-            throw new AuthenticationFailureException(result.Errors.ToString());
+            error = createResult.Errors.ToList()[0];
+            logger.LogError("Error adding login info for user with ID {userId}: {error}", user.Id, error);
+            return AuthResult.Failure(error.Description);
         }
-
-        return user;
-    }
-
-    public Task ExternalSignInUserAsync(string loginProvider, string providerKey, bool isPersistent, bool bypassTwoFactor)
-    {
-        return signInManager.ExternalLoginSignInAsync(loginProvider, providerKey, isPersistent, bypassTwoFactor);
+        
+        // Sign in the new user
+        // Should always succeed unless there are infrastructure issues
+        await signInManager.ExternalLoginSignInAsync(
+            externalLoginInfo.LoginProvider, 
+            externalLoginInfo.ProviderKey, 
+            isPersistent: true, 
+            bypassTwoFactor: true
+        );
+        
+        // Return success
+        return AuthResult.Success();
     }
     
     public Task SignOutUserAsync()

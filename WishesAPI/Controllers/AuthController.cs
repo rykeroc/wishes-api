@@ -24,6 +24,8 @@ public class AuthController(
         {
             RedirectUri = Url.Action("GoogleCallback")
         };
+
+        properties.Items["LoginProvider"] = GoogleDefaults.AuthenticationScheme;
         
         logger.LogDebug("Initiating Google login with redirect URI: {RedirectUri}", properties.RedirectUri);
 
@@ -35,38 +37,13 @@ public class AuthController(
     public async Task<ActionResult> GoogleCallback()
     {
         logger.LogTrace("GoogleCallback initiated");
-        
-        // Get authentication details
-        var result = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
-        if (!result.Succeeded)
-        {
-            logger.LogInformation("Google Callback authentication failed: {ex}", result.Failure);
-            return BadRequest("Error loading external login information from Google");
-        }
 
-        // Extract user information
-        var claims = result.Principal.Claims.ToList();
-        logger.LogDebug("Token claims: {claims}", claims);
-
-        var email = authService.FindEmail(claims);
-        if (email == null)
+        var loginResult = await authService.LoginWithProvider();
+        if (!loginResult.Succeeded)
         {
-            logger.LogInformation("Email from claims is missing: {claims}", claims);
-            return BadRequest("Error loading external login information from Google");
-        }
-        var providerKey = authService.FindProviderKey(claims);
-        if (providerKey == null)
-        {
-            logger.LogInformation("Provider key from claims is missing: {claims}", claims);
-            return BadRequest("Error loading external login information from Google");
+            return Problem(loginResult.Error, statusCode:StatusCodes.Status401Unauthorized);
         }
         
-        // Get user with email
-        const string provider = "Google";
-        
-        // Adds auth cookie to response for user
-        await authService.ExternalSignInUserAsync(provider, providerKey, isPersistent: true, bypassTwoFactor: true);
-
         var loginCallbackPath = configuration["ClientApplication:LoginCallback"]!;
         
         // Redirect to client application

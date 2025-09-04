@@ -9,10 +9,10 @@ using WishesAPI.Data;
 
 #nullable disable
 
-namespace WishesAPI.Migrations
+namespace WishesAPI.Data.Migrations
 {
-    [DbContext(typeof(WishesContext))]
-    [Migration("20250902221443_Initial")]
+    [DbContext(typeof(ApplicationDbContext))]
+    [Migration("20250904215924_Initial")]
     partial class Initial
     {
         /// <inheritdoc />

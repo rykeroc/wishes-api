@@ -28,4 +28,10 @@
       </Content>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Helpers\" />
+      <Folder Include="Models\DTO\" />
+      <Folder Include="Repositories\" />
+    </ItemGroup>
+
 </Project>

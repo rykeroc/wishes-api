@@ -11,14 +11,14 @@ builder.Services.AddSwaggerGen();
 
 // Configure Database Context
 var connectionString = builder.Configuration.GetConnectionString("WishesContext");
-builder.Services.AddDbContextPool<WishesContext>(opt => opt.UseNpgsql(connectionString));
+builder.Services.AddDbContextPool<ApplicationDbContext>(opt => opt.UseNpgsql(connectionString));
 
 // Configure Identity
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     {
         options.SignIn.RequireConfirmedAccount = true;
     })
-    .AddEntityFrameworkStores<WishesContext>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
 builder.Services.ConfigureApplicationCookie(options =>
@@ -49,6 +49,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseRouting();
 
 // Authentication must come before Authorization
 app.UseAuthentication();
