@@ -8,10 +8,10 @@ using WishesAPI.Data;
 
 #nullable disable
 
-namespace WishesAPI.Migrations
+namespace WishesAPI.Data.Migrations
 {
-    [DbContext(typeof(WishesContext))]
-    partial class WishesContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(ApplicationDbContext))]
+    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
