@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
+using WishesAPI.Helpers;
 
 namespace WishesAPI.Services;
 
@@ -38,9 +39,10 @@ public class AuthService(
         IdentityError error;
         // Create new user
         var email = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Email);
+        var username = UserHelper.GetDefaultUsernameFromEmail(email!);
         var user = new IdentityUser
         {
-            UserName = email,
+            UserName = username,
             Email = email,
             EmailConfirmed = true
         };
