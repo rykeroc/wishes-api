@@ -61,4 +61,11 @@ public class AuthController(
         // Redirect to client application
         return Redirect(logoutCallbackPath);
     }
+    
+    [HttpGet]
+    [Route("access-denied")]
+    public IActionResult AccessDenied()
+    {
+        return Forbid();
+    }
 }
