@@ -7,7 +7,8 @@ using WishesAPI.Services;
 namespace WishesAPI.Controllers;
 
 [ApiController]
-[Route("api/auth")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/auth")]
 public class AuthController(
     ILogger<AuthController> logger,
     IConfiguration configuration,
@@ -16,27 +17,44 @@ public class AuthController(
 {
     [HttpGet]
     [Route("google/login")]
-    public ActionResult GoogleLogin()
+    public ActionResult GoogleLogin(string? returnUrl = null)
     {
-        logger.LogTrace("GoogleLogin initiated");
+        logger.LogTrace("GoogleLogin initiated with returnUrl: {ReturnUrl}", returnUrl);
         
+        var redirectUri = Url.Action("GoogleCallback", new { returnUrl });
         var properties = new AuthenticationProperties
         {
-            RedirectUri = Url.Action("GoogleCallback")
+            RedirectUri = redirectUri,
+            Items =
+            {
+                ["LoginProvider"] = GoogleDefaults.AuthenticationScheme
+            }
         };
 
-        properties.Items["LoginProvider"] = GoogleDefaults.AuthenticationScheme;
-        
         logger.LogDebug("Initiating Google login with redirect URI: {RedirectUri}", properties.RedirectUri);
 
         return Challenge(properties, GoogleDefaults.AuthenticationScheme);
     }
     
+    private bool IsSafeRedirect(string? returnUrl)
+    {
+        if (string.IsNullOrWhiteSpace(returnUrl))
+            return false;
+
+        // Allow local URLs
+        if (Url.IsLocalUrl(returnUrl))
+            return true;
+
+        // Optionally, allow configured client domains
+        var allowedBaseUrl = configuration["ClientApplication:BaseUrl"];
+        return allowedBaseUrl != null && returnUrl.StartsWith(allowedBaseUrl, StringComparison.OrdinalIgnoreCase);
+    }
+    
     [HttpGet]
     [Route("google/callback")]
-    public async Task<ActionResult> GoogleCallback()
+    public async Task<ActionResult> GoogleCallback(string? returnUrl = null)
     {
-        logger.LogTrace("GoogleCallback initiated");
+        logger.LogTrace("GoogleCallback initiated with returnUrl: {ReturnUrl}", returnUrl);
 
         var loginResult = await authService.LoginWithProvider();
         if (!loginResult.Succeeded)
@@ -44,10 +62,12 @@ public class AuthController(
             return Problem(loginResult.Error, statusCode:StatusCodes.Status401Unauthorized);
         }
         
-        var loginCallbackPath = configuration["ClientApplication:LoginCallback"]!;
-        
+        // Default fallback if returnUrl is missing or unsafe
+        var defaultCallback = configuration["ClientApplication:LoginCallback"]!;
+        var redirectUrl = IsSafeRedirect(returnUrl) ? returnUrl! : defaultCallback;
+
         // Redirect to client application
-        return Redirect(loginCallbackPath);
+        return Redirect(redirectUrl);
     }
     
     [HttpGet]
@@ -66,6 +86,8 @@ public class AuthController(
     [Route("access-denied")]
     public IActionResult AccessDenied()
     {
+        logger.LogTrace("AccessDenied initiated");
+        
         return Forbid();
     }
 }

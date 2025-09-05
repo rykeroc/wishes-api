@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Server.HttpSys;
 using Microsoft.EntityFrameworkCore;
 using WishesAPI.Data;
 using WishesAPI.Services;
@@ -6,6 +8,13 @@ using WishesAPI.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddApiVersioning(options =>
+{
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.ReportApiVersions = true;
+});
+
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
 
@@ -30,9 +39,9 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     
-    options.LoginPath = "/api/auth/google/login";
-    options.LogoutPath = "/api/auth/logout";
-    options.AccessDeniedPath = "/api/auth/access-denied";
+    options.LoginPath = "/api/v1/auth/google/login";
+    options.LogoutPath = "/api/v1/auth/logout";
+    options.AccessDeniedPath = "/api/v1/auth/access-denied";
 });
 
 // Configure third party AUTH
@@ -46,6 +55,7 @@ builder.Services.AddAuthentication()
     });
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 var app = builder.Build();
 
