@@ -23,7 +23,15 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
+    options.SlidingExpiration = true;
+
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    
     options.LoginPath = "/api/auth/google/login";
+    options.LogoutPath = "/api/auth/logout";
     options.AccessDeniedPath = "/api/auth/access-denied";
 });
 
