@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Server.HttpSys;
 using Microsoft.EntityFrameworkCore;
 using WishesAPI.Data;
+using WishesAPI.Helpers;
 using WishesAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,10 +25,13 @@ builder.Services.AddDbContextPool<ApplicationDbContext>(opt => opt.UseNpgsql(con
 // Configure Identity
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     {
+        options.User.AllowedUserNameCharacters = UserHelper.AllowedUsernameCharacters;
+        options.User.RequireUniqueEmail = true;
         options.SignIn.RequireConfirmedAccount = true;
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
+
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
