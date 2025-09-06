@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
+using WishesAPI.Errors;
 using WishesAPI.Helpers;
 
 namespace WishesAPI.Services;
@@ -24,7 +25,7 @@ public class AuthService(
         {
             // No login information found for the current user.
             // This means they are not signed in via the third party
-            return AuthResult.Failure("No external login information provided");
+            return AuthResult.Failure(nameof(AuthErrors.InvalidExternalLoginInfo));
         }
         
         // Attempt to sign in with third party login information 
@@ -51,7 +52,7 @@ public class AuthService(
         {
             error = createResult.Errors.ToList()[0];
             logger.LogError("Error creating user with email {email}: {error}", email, error);
-            return AuthResult.Failure(error.Description);
+            return AuthResult.Failure(error.Code);
         }
         
         // Create external login information for the new user
@@ -65,7 +66,7 @@ public class AuthService(
         {
             error = createResult.Errors.ToList()[0];
             logger.LogError("Error adding login info for user with ID {userId}: {error}", user.Id, error);
-            return AuthResult.Failure(error.Description);
+            return AuthResult.Failure(error.Code);
         }
         
         // Sign in the new user
